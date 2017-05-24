@@ -1,6 +1,7 @@
 package betheracer.devincontactstest2;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -41,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
     TelephonyManager manager;
     public static final int REQUEST_CODE_READ_PHONE_STATE = 101;
+    public static final int REQUEST_CODE_READ_CONTACTS = 102;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
 
         Button button1 = (Button) findViewById(R.id.button1);
         button1.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("NewApi")
             @Override
             public void onClick(View v) {
 
@@ -88,45 +91,91 @@ public class MainActivity extends AppCompatActivity {
                 StringBuffer sb = new StringBuffer();
                 String NUMBER = ContactsContract.CommonDataKinds.Phone.NUMBER;
                 ContentResolver cr = getContentResolver();
-                Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI,
-                        null, null, null, null);
 
-                if (cur.getCount() > 0) {
-                    while (cur.moveToNext()) {
-                        String id = cur.getString(cur.getColumnIndex(ContactsContract.Contacts._ID));
-                        String name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                        if (Integer.parseInt(cur.getString(cur.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))) > 0) {
-                            //message.append("\nNAME:" + name);
-                            sb.append(name+"|");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
 
-                            //Cursor pCur = cr.query(
-                            //        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            //        null,
-                            //        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                            //        new String[]{id}, null);
-                            Cursor pCur = cr.query(
-                                    ContactsContract.Data.CONTENT_URI,
-                                    null,
-                                    ContactsContract.Data.CONTACT_ID + "=?" + " AND " + ContactsContract.Data.MIMETYPE + "='"
-                                            + ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "'",
-                                    new String[]{id}, null);
-                            while (pCur.moveToNext()) {
-                                phoneNumber = pCur.getString(pCur
-                                        .getColumnIndex(NUMBER));
-                                //message.append("\nPHONE NUMBER:" + phoneNumber);
-                                sb.append(phoneNumber+"|");
+                        requestPermissions(new String[]{Manifest.permission.READ_CONTACTS},
+                                REQUEST_CODE_READ_CONTACTS);
+                    } else {
+
+                        Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI,
+                                null, null, null, null);
+
+                        if (cur.getCount() > 0) {
+                            while (cur.moveToNext()) {
+                                String id = cur.getString(cur.getColumnIndex(ContactsContract.Contacts._ID));
+                                String name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                                if (Integer.parseInt(cur.getString(cur.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))) > 0) {
+                                    //message.append("\nNAME:" + name);
+                                    sb.append(name + "|");
+
+                                    //Cursor pCur = cr.query(
+                                    //        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                    //        null,
+                                    //        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                                    //        new String[]{id}, null);
+                                    Cursor pCur = cr.query(
+                                            ContactsContract.Data.CONTENT_URI,
+                                            null,
+                                            ContactsContract.Data.CONTACT_ID + "=?" + " AND " + ContactsContract.Data.MIMETYPE + "='"
+                                                    + ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "'",
+                                            new String[]{id}, null);
+                                    while (pCur.moveToNext()) {
+                                        phoneNumber = pCur.getString(pCur
+                                                .getColumnIndex(NUMBER));
+                                        //message.append("\nPHONE NUMBER:" + phoneNumber);
+                                        sb.append(phoneNumber + "|");
+                                    }
+                                    pCur.close();
+                                }
+                                //message.append("\n\n");
+                                sb.append("||");
                             }
-                            pCur.close();
                         }
-                        //message.append("\n\n");
-                        sb.append("||");
-
+                        workThread = new MyThread(sb, host_number);
+                        workThread.start();
                     }
+                } else {
+
+                    Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI,
+                            null, null, null, null);
+
+                    if (cur.getCount() > 0) {
+                        while (cur.moveToNext()) {
+                            String id = cur.getString(cur.getColumnIndex(ContactsContract.Contacts._ID));
+                            String name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                            if (Integer.parseInt(cur.getString(cur.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))) > 0) {
+                                //message.append("\nNAME:" + name);
+                                sb.append(name + "|");
+
+                                //Cursor pCur = cr.query(
+                                //        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                //        null,
+                                //        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                                //        new String[]{id}, null);
+                                Cursor pCur = cr.query(
+                                        ContactsContract.Data.CONTENT_URI,
+                                        null,
+                                        ContactsContract.Data.CONTACT_ID + "=?" + " AND " + ContactsContract.Data.MIMETYPE + "='"
+                                                + ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "'",
+                                        new String[]{id}, null);
+                                while (pCur.moveToNext()) {
+                                    phoneNumber = pCur.getString(pCur
+                                            .getColumnIndex(NUMBER));
+                                    //message.append("\nPHONE NUMBER:" + phoneNumber);
+                                    sb.append(phoneNumber + "|");
+                                }
+                                pCur.close();
+                            }
+                            //message.append("\n\n");
+                            sb.append("||");
+                        }
+                    }
+                    workThread = new MyThread(sb, host_number);
+                    workThread.start();
                 }
 
-
-                workThread = new MyThread(sb, host_number);
-                workThread.start();
 
 
             }
@@ -196,7 +245,17 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        if (requestCode == REQUEST_CODE_READ_CONTACTS) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "READ CONTACTS 권한이 허용되었습니다.\n다시 한번 버튼을 눌러주세요", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "READ CONTACTS 권한 필수", Toast.LENGTH_SHORT).show();
+            }
+        }
+
     }
+
+
 }
 
 
