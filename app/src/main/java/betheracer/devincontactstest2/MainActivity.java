@@ -1,15 +1,20 @@
 package betheracer.devincontactstest2;
 
+import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -34,7 +39,8 @@ public class MainActivity extends AppCompatActivity {
 
     MyThread workThread;
 
-
+    TelephonyManager manager;
+    public static final int REQUEST_CODE_READ_PHONE_STATE = 101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,12 +49,32 @@ public class MainActivity extends AppCompatActivity {
 
         textView = (TextView) findViewById(R.id.textView);
 
-        TelephonyManager manager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        host_number = manager.getLine1Number();
+        manager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 
-        if(host_number.startsWith("+82")) {
-            host_number=host_number.replace("+82", "0");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+
+                requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},
+                        REQUEST_CODE_READ_PHONE_STATE);
+            } else {
+                ///////////////// get phone Number : start //////////////////
+                host_number = manager.getLine1Number();
+
+                if(host_number.startsWith("+82")) {
+                    host_number=host_number.replace("+82", "0");
+                }
+                ///////////////// get phone Number : end  //////////////////
+            }
+        } else {
+            ///////////////// get phone Number : start //////////////////
+            host_number = manager.getLine1Number();
+
+            if(host_number.startsWith("+82")) {
+                host_number=host_number.replace("+82", "0");
+            }
+            ///////////////// get phone Number : end  //////////////////
         }
+
 
         textView.setText(host_number);
 
@@ -152,9 +178,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
+        if (requestCode == REQUEST_CODE_READ_PHONE_STATE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                ///////////////// get phone Number : start //////////////////
+                host_number = manager.getLine1Number();
 
+                if(host_number.startsWith("+82")) {
+                    host_number=host_number.replace("+82", "0");
+                }
+                ///////////////// get phone Number : end  //////////////////
 
+            } else {
+                Toast.makeText(this, "READ PHONE STATE 권한 필수", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+    }
 }
 
 
